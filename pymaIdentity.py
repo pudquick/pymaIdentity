@@ -3,6 +3,37 @@ from SystemConfiguration import SCDynamicStoreCopyConsoleUser
 from objc import NULL
 import os
 
+def identity_dict(id_obj):
+    result = {}
+    if (id_obj):
+        result['aliases'] = id_obj.aliases()[:]
+        result['emailAddress'] = id_obj.emailAddress()
+        result['fullName'] = id_obj.fullName()
+        result['isHidden'] = id_obj.isHidden()
+        result['posixName'] = id_obj.posixName()
+        result['UUIDString'] = id_obj.UUIDString()
+        if (type(id_obj) == CBUserIdentity):
+            result['isEnabled'] = id_obj.isEnabled()
+            result['posixUID'] = id_obj.posixUID()
+        else:
+            result['isEnabled'] = None
+            result['posixUID'] = None
+        if (type(id_obj) == CBGroupIdentity):
+            result['posixGID'] = id_obj.posixGID()
+        else:
+            result['posixGID'] = None
+        if (type(id_obj) == CBUserIdentity):
+            result['class'] = "user"
+        elif (type(id_obj) == CBGroupIdentity):
+            result['class'] = "group"
+        else:
+            result['class'] = None
+    else:
+        result = {'aliases': None,'emailAddress': None,'fullName': None,
+                  'isHidden': None,'posixName': None,'UUIDString': None,
+                  'isEnabled': None,'posixUID': None,'posixGID': None,'class': None}
+    return result
+
 # get pseudo authority that represents local + directory services
 defaultAuth = CBIdentityAuthority.defaultIdentityAuthority()
 
@@ -18,6 +49,7 @@ if not user:
     print "Error: Unable to find user:", username
 else:
     print "User details:", user
+    print "User dict:", identity_dict(user)
 
 # attempt to find group in question
 group = CBGroupIdentity.identityWithName_authority_(groupname, defaultAuth)
@@ -25,6 +57,7 @@ if not group:
     print "Error: Unable to find group:", groupname
 else:
     print "Group details:", group
+    print "Group dict:", identity_dict(group)
 
 if (user and group):
     # Find out if user is member of group
@@ -52,4 +85,4 @@ else:
 
 effective_user = CBUserIdentity.userIdentityWithPosixUID_authority_(os.geteuid(), defaultAuth)
 print "Effective user:", effective_user
-
+print "Effective user dict:", identity_dict(effective_user)
