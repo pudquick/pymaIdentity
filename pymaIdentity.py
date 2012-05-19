@@ -4,7 +4,7 @@ from objc import NULL
 import os
 
 # get pseudo authority that represents local + directory services
-localAuth = CBIdentityAuthority.localIdentityAuthority()
+defaultAuth = CBIdentityAuthority.defaultIdentityAuthority()
 
 ### Testing group, user, and membership
 
@@ -13,14 +13,14 @@ username, groupname = ("root", "wheel")
 print "Test: User: %s, Group: %s" % (username, groupname)
 
 # attempt to find user in question
-user = CBUserIdentity.identityWithName_authority_(username, localAuth)
+user = CBUserIdentity.identityWithName_authority_(username, defaultAuth)
 if not user:
     print "Error: Unable to find user:", username
 else:
     print "User details:", user
 
 # attempt to find group in question
-group = CBGroupIdentity.identityWithName_authority_(groupname, localAuth)
+group = CBGroupIdentity.identityWithName_authority_(groupname, defaultAuth)
 if not group:
     print "Error: Unable to find group:", groupname
 else:
@@ -41,7 +41,7 @@ if (current_gui_user in [u'loginwindow', NULL]):
 
 # If is not None, resolve shortname to full account identity
 if current_gui_user:
-    current_gui_user = CBUserIdentity.identityWithName_authority_(current_gui_user, localAuth)
+    current_gui_user = CBUserIdentity.identityWithName_authority_(current_gui_user, defaultAuth)
 
 if not current_gui_user:
     print "Error: No one currently logged into workstation physically"
@@ -50,6 +50,6 @@ else:
 
 ### Get the effective user currently running the process
 
-effective_user = CBUserIdentity.userIdentityWithPosixUID_authority_(os.geteuid(), localAuth)
+effective_user = CBUserIdentity.userIdentityWithPosixUID_authority_(os.geteuid(), defaultAuth)
 print "Effective user:", effective_user
 
