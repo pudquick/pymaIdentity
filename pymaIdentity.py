@@ -1,7 +1,8 @@
+import os, pwd
 from Collaboration import CBUserIdentity, CBGroupIdentity, CBIdentityAuthority
 from SystemConfiguration import SCDynamicStoreCopyConsoleUser
 from objc import NULL
-import os
+from ctypes import *
 
 def identity_dict(id_obj):
     result = {}
@@ -33,6 +34,36 @@ def identity_dict(id_obj):
                   'isHidden': None,'posixName': None,'UUIDString': None,
                   'isEnabled': None,'posixUID': None,'posixGID': None,'class': None}
     return result
+
+def posix_user(username):
+    try:
+        _ = pwd.getpwnam(username)
+    except:
+        return {'name': None, 'uid': None, 'gid': None, 'comment': None, 'home': None, 'shell': None}
+    return {'name': _.pw_name, 'uid': _.pw_uid, 'gid': _.pw_gid, 'comment': _.pw_gecos, 'home': _.pw_dir, 'shell': _.pw_shell}
+
+def get_groups(username):
+    # verify user exists
+    defaultAuth = CBIdentityAuthority.defaultIdentityAuthority()
+    the_user = CBUserIdentity.identityWithName_authority_(username, defaultAuth)
+    if (the_user != None):
+        user_details = identity_dict(the_user)
+        posix_details = posix_user(user_details['posixName'])
+        libc = CDLL("/usr/lib/libSystem.B.dylib")
+        # define access to an undocumented Apple function 'getgrouplist_2'
+        # Based on the example from:
+        # http://opensource.apple.com/source/shell_cmds/shell_cmds-162/id/id.c
+        getgrouplist_2 = libc.getgrouplist_2
+        getgrouplist_2.argtypes = [c_char_p, c_uint32, POINTER(POINTER(c_uint32))]
+        groups = POINTER(c_uint32)()
+        ngroups = getgrouplist_2(user_details['posixName'], posix_details['gid'], byref(groups))
+        # make explicit copies prior to freeing the allocated pointer array
+        group_list = [(0+groups[i]) for i in range(ngroups)]
+        # clean up after ourselves
+        _ = libc.free(groups)
+        for g in group_list:
+            full_group = CBGroupIdentity.groupIdentityWithPosixGID_authority_(g, defaultAuth)
+            yield identity_dict(full_group)
 
 # get pseudo authority that represents local + directory services
 defaultAuth = CBIdentityAuthority.defaultIdentityAuthority()
@@ -86,3 +117,9 @@ else:
 effective_user = CBUserIdentity.userIdentityWithPosixUID_authority_(os.geteuid(), defaultAuth)
 print "Effective user:", effective_user
 print "Effective user dict:", identity_dict(effective_user)
+
+### Print out total known group membership for a user
+
+print "Group membership for:", username
+for x in get_groups(username):
+    print x
