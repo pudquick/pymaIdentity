@@ -2,7 +2,7 @@ import pwd, grp, sys
 from Collaboration import CBUserIdentity, CBGroupIdentity, CBIdentityAuthority
 from objc import NULL
 from ctypes import *
- 
+
 class Group:
     _fields = ('name', 'gid', 'hidden', 'uuid', 'fullname', '_id_obj')
     _gr_map = {'name': 'gr_name', 'gid': 'gr_gid'}
