@@ -1,7 +1,24 @@
-import pwd, grp, sys
+import pwd, grp, sys, os
 from Collaboration import CBUserIdentity, CBGroupIdentity, CBIdentityAuthority
+from SystemConfiguration import SCDynamicStoreCopyConsoleUser
 from objc import NULL
 from ctypes import *
+
+def CurrentDesktopUser():
+    # User account currently logged in locally to the machine, sitting at the Desktop
+    # This works even with Fast User Switching
+    # http://developer.apple.com/library/mac/#qa/qa1133/_index.html
+    current_user = (SCDynamicStoreCopyConsoleUser(NULL, NULL, NULL) or [NULL])[0]
+    if (current_user == u'loginwindow') or (current_user == NULL):
+        current_user = None
+    return User(current_user)
+
+def CurrentEffectiveUser():
+    # User account we're currently running this script with
+    try:
+        return User(os.geteuid())
+    except:
+        return User(None)
 
 class Group:
     _fields = ('name', 'gid', 'hidden', 'uuid', 'fullname', '_id_obj')
@@ -241,3 +258,15 @@ class User:
         else:
             # Not sure what we were passed, fail to False
             return False
+    
+    def group_names(self):
+        if self.groups:
+            return [x.name for x in self.groups]
+    
+    def group_ids(self):
+        if self.groups:
+            return [x.gid for x in self.groups]
+    
+    def group_objs(self):
+        # Just for completeness against the other convenience functions
+        return self.groups
