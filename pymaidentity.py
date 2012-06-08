@@ -89,8 +89,17 @@ class Group:
         for i in self._fields:
             setattr(self, i, None)
         
-        # Determine whether we were passed a name or a uid
-        if isinstance(name_or_gid, (int,long)):
+        # Determine whether we were passed a name or a gid or a Group
+        if isinstance(name_or_gid, Group):
+            # Guessing it's a Group object - clone the settings
+            # Clone if user name or gid present, otherwise None
+            if name_or_gid != None:
+                if name_or_gid.name is not None:
+                    gr_info = grp.getgrnam(name_or_gid.name)
+                else:
+                    gr_info = grp.getgrgid(name_or_gid.gid)
+                self._init_with_grp(gr_info)
+        elif isinstance(name_or_gid, (int,long)):
             # Guessing it's a gid
             try:
                 gr_info = grp.getgrgid(name_or_gid)
@@ -215,8 +224,17 @@ class User:
         for i in self._fields:
             setattr(self, i, None)
         
-        # Determine whether we were passed a name or a uid
-        if isinstance(name_or_uid, (int,long)):
+        # Determine whether we were passed a name or a uid or a User
+        if isinstance(name_or_uid, User):
+            # Guessing it's a User object - clone the settings
+            # Clone if user name or uid present, otherwise None
+            if name_or_uid != None:
+                if name_or_uid.name is not None:
+                    pw_info = pwd.getpwnam(name_or_uid.name)
+                else:
+                    pw_info = pwd.getpwuid(name_or_uid.uid)
+                self._init_with_pwd(pw_info)
+        elif isinstance(name_or_uid, (int,long)):
             # Guessing it's a uid
             try:
                 pw_info = pwd.getpwuid(name_or_uid)
